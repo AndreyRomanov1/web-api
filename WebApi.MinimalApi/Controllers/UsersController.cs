@@ -149,30 +149,23 @@ public class UsersController : Controller
 
     [HttpGet(Name = nameof(GetAllUsers))]
     [Produces("application/json", "application/xml")]
-    public IActionResult GetAllUsers([Range(0, int.MaxValue)][FromQuery] int pageNumber = 1, [Range(1, 20)][FromQuery] int pageSize = 10)
+    public IActionResult GetAllUsers(GetUsersDto dto)
     {
-        if (!ModelState.IsValid)
-        {
-
-        }
-        if (pageNumber <= 0)
-            pageNumber = 1;
-        if (pageSize <= 0)
-            pageSize = 1;
-        if (pageSize > 20)
-            pageSize = 20;
-        
-        var usersPage = userRepository.GetPage(pageNumber, pageSize);
+        var usersPage = userRepository.GetPage(dto.pageNumber, dto.pageSize);
         var users = mapper.Map<IEnumerable<UserDto>>(usersPage);
-        
+
         var paginationHeader = new
         {
-            previousPageLink = usersPage.HasPrevious ? linkGenerator
-                .GetUriByRouteValues(HttpContext, "GetAllUsers", 
-                    new { pageNumber = pageNumber - 1, pageSize = pageSize }) : null, 
-            nextPageLink = usersPage.HasNext ? linkGenerator
-                .GetUriByRouteValues(HttpContext, "GetAllUsers",
-                    new { pageNumber = pageNumber + 1, pageSize = pageSize }) : null,
+            previousPageLink = usersPage.HasPrevious
+                ? linkGenerator
+                    .GetUriByRouteValues(HttpContext, "GetAllUsers",
+                        new { pageNumber = dto.pageNumber - 1, pageSize = dto.pageSize })
+                : null,
+            nextPageLink = usersPage.HasNext
+                ? linkGenerator
+                    .GetUriByRouteValues(HttpContext, "GetAllUsers",
+                        new { pageNumber = dto.pageNumber + 1, pageSize = dto.pageSize })
+                : null,
             totalCount = usersPage.TotalCount,
             pageSize = usersPage.PageSize,
             currentPage = usersPage.CurrentPage,
