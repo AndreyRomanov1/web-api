@@ -68,10 +68,17 @@ public class UsersController : Controller
             userRepository.Delete(userId);
             return NoContent();
         }
-        
+
         return NotFound();
     }
-    
+
+    [HttpOptions]
+    public IActionResult GetUsersOptions()
+    {
+        Response.Headers.Append("Allow", "POST, GET, OPTIONS");
+        return Ok();
+    }
+
     private void CheckLogin(string? login)
     {
         if (!string.IsNullOrEmpty(login) && !login.All(char.IsLetterOrDigit))
