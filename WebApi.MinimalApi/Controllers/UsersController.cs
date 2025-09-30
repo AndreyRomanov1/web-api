@@ -47,14 +47,26 @@ public class UsersController : Controller
         }
 
         var createdUserEntity = mapper.Map<UserEntity>(user);
-        userRepository.Insert(createdUserEntity);
+        var insertedUserEntity = userRepository.Insert(createdUserEntity);
         return CreatedAtRoute(
             nameof(GetUserById),
-            new { userId = createdUserEntity.Id },
-            createdUserEntity.Id );
+            new { userId = insertedUserEntity.Id },
+            insertedUserEntity.Id );
     }
     
-    private void CheckLogin(string login)
+    [HttpDelete("{userId:guid}")]
+    public IActionResult DeleteUser([FromRoute] Guid userId)
+    {
+        if (userRepository.FindById(userId) != null)
+        {
+            userRepository.Delete(userId);
+            return NoContent();
+        }
+        
+        return NotFound();
+    }
+    
+    private void CheckLogin(string? login)
     {
         if (!string.IsNullOrEmpty(login) && !login.All(char.IsLetterOrDigit))
         {
