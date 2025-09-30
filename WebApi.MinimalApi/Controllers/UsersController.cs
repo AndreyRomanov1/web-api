@@ -18,7 +18,7 @@ public class UsersController : Controller
         this.mapper = mapper;
     }
 
-    [HttpGet("{userId}")]
+    [HttpGet("{userId:guid}", Name = nameof(GetUserById))]
     public ActionResult<UserDto> GetUserById([FromRoute] Guid userId)
     {
         var user = userRepository.FindById(userId);
@@ -31,8 +31,34 @@ public class UsersController : Controller
     }
 
     [HttpPost]
-    public IActionResult CreateUser([FromBody] object user)
+    [Produces("application/json", "application/xml")]
+    public IActionResult CreateUser([FromBody] CreateUserDto? user)
     {
-        throw new NotImplementedException();
+        if (user is null)
+        {
+            return BadRequest();
+        }
+
+        CheckLogin(user.Login);
+
+        if (!ModelState.IsValid)
+        {
+            return UnprocessableEntity(ModelState);
+        }
+
+        var createdUserEntity = mapper.Map<UserEntity>(user);
+        userRepository.Insert(createdUserEntity);
+        return CreatedAtRoute(
+            nameof(GetUserById),
+            new { userId = createdUserEntity.Id },
+            createdUserEntity.Id );
+    }
+    
+    private void CheckLogin(string login)
+    {
+        if (!string.IsNullOrEmpty(login) && !login.All(char.IsLetterOrDigit))
+        {
+            ModelState.AddModelError("Login", "Login can contain only letters and digits");
+        }
     }
 }
