@@ -7,6 +7,7 @@ namespace WebApi.MinimalApi.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
+[Produces("application/json", "application/xml")]
 public class UsersController : Controller
 {
     private readonly IUserRepository userRepository;
@@ -37,7 +38,6 @@ public class UsersController : Controller
     }
 
     [HttpPost]
-    [Produces("application/json", "application/xml")]
     public IActionResult CreateUser([FromBody] CreateUserDto? user)
     {
         if (user is null)
@@ -57,9 +57,9 @@ public class UsersController : Controller
         return CreatedAtRoute(
             nameof(GetUserById),
             new { userId = insertedUserEntity.Id },
-            insertedUserEntity.Id );
+            insertedUserEntity.Id);
     }
-    
+
     [HttpDelete("{userId:guid}")]
     public IActionResult DeleteUser([FromRoute] Guid userId)
     {
@@ -68,10 +68,38 @@ public class UsersController : Controller
             userRepository.Delete(userId);
             return NoContent();
         }
-        
+
         return NotFound();
     }
-    
+
+    [HttpPut("{userId}")]
+    public ActionResult UpdateUser([FromRoute] Guid userId, [FromBody] UpdateUserDto? dto)
+    {
+        if (userId == Guid.Empty || dto is null)
+        {
+            return BadRequest();
+        }
+
+        if (!ModelState.IsValid)
+        {
+            return UnprocessableEntity(ModelState);
+        }
+
+        var user = mapper.Map(dto, new UserEntity(userId));
+
+        userRepository.UpdateOrInsert(user, out var isInserted);
+
+        if (isInserted)
+        {
+            return CreatedAtRoute(
+                nameof(GetUserById),
+                new { userId = user.Id },
+                user.Id);
+        }
+
+        return NoContent();
+    }
+
     private void CheckLogin(string? login)
     {
         if (!string.IsNullOrEmpty(login) && !login.All(char.IsLetterOrDigit))
