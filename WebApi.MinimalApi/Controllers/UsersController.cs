@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Mvc;
 using WebApi.MinimalApi.Domain;
 using WebApi.MinimalApi.Models;
 
@@ -8,15 +9,25 @@ namespace WebApi.MinimalApi.Controllers;
 [ApiController]
 public class UsersController : Controller
 {
-    // Чтобы ASP.NET положил что-то в userRepository требуется конфигурация
-    public UsersController(IUserRepository userRepository)
+    private readonly IUserRepository userRepository;
+    private readonly IMapper mapper;
+
+    public UsersController(IUserRepository userRepository, IMapper mapper)
     {
+        this.userRepository = userRepository;
+        this.mapper = mapper;
     }
 
     [HttpGet("{userId}")]
     public ActionResult<UserDto> GetUserById([FromRoute] Guid userId)
     {
-        throw new NotImplementedException();
+        var user = userRepository.FindById(userId);
+        if (user == null)
+        {
+            return NotFound();
+        }
+
+        return mapper.Map<UserDto>(user);
     }
 
     [HttpPost]
