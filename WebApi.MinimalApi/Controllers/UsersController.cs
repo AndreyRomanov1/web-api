@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using WebApi.MinimalApi.Domain;
 using WebApi.MinimalApi.Models;
@@ -21,7 +22,6 @@ public class UsersController : Controller
 
     [HttpGet("{userId:guid}", Name = nameof(GetUserById))]
     [HttpHead("{userId:guid}")]
-    [Produces("application/json", "application/xml")]
     public ActionResult<UserDto> GetUserById([FromRoute] Guid userId)
     {
         var user = userRepository.FindById(userId);
@@ -29,6 +29,7 @@ public class UsersController : Controller
         {
             return NotFound();
         }
+
         if (HttpMethods.IsHead(Request.Method))
         {
             return Content(string.Empty, "application/json; charset=utf-8");
@@ -96,6 +97,40 @@ public class UsersController : Controller
                 new { userId = user.Id },
                 user.Id);
         }
+
+        return NoContent();
+    }
+
+    [HttpPatch("{userId}")]
+    public ActionResult PartiallyUpdateUser([FromRoute] Guid userId, [FromBody] JsonPatchDocument<UpdateUserDto>? patchDoc)
+    {
+        if (userId == Guid.Empty)
+        {
+            return NotFound();
+        }
+
+        if (patchDoc is null)
+        {
+            return BadRequest();
+        }
+
+        var updateUserDto = new UpdateUserDto();
+        patchDoc.ApplyTo(updateUserDto, ModelState);
+        TryValidateModel(updateUserDto);
+        if (!ModelState.IsValid)
+        {
+            return UnprocessableEntity(ModelState);
+        }
+
+        var existedUser = userRepository.FindById(userId);
+        if (existedUser is null)
+        {
+            return NotFound();
+        }
+
+        var user = mapper.Map(updateUserDto, new UserEntity(userId));
+
+        userRepository.Update(user);
 
         return NoContent();
     }
