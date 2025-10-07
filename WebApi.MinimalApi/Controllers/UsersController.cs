@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.JsonPatch;
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
+using Swashbuckle.AspNetCore.Annotations;
 using WebApi.MinimalApi.Domain;
 using WebApi.MinimalApi.Models;
 
@@ -24,6 +25,13 @@ public class UsersController : Controller
         this.linkGenerator = linkGenerator;
     }
 
+    /// <summary>
+    /// Получить пользователя
+    /// </summary>
+    /// <param name="userId">Идентификатор пользователя</param>
+    [Produces("application/json", "application/xml")]
+    [SwaggerResponse(200, "OK", typeof(UserDto))]
+    [SwaggerResponse(404, "Пользователь не найден")]
     [HttpGet("{userId:guid}", Name = nameof(GetUserById))]
     [HttpHead("{userId:guid}")]
     public ActionResult<UserDto> GetUserById([FromRoute] Guid userId)
@@ -42,7 +50,27 @@ public class UsersController : Controller
         return mapper.Map<UserDto>(user);
     }
 
+    /// <summary>
+    /// Создать пользователя
+    /// </summary>
+    /// <remarks>
+    /// Пример запроса:
+    ///
+    ///     POST /api/users
+    ///     {
+    ///        "login": "johndoe375",
+    ///        "firstName": "John",
+    ///        "lastName": "Doe"
+    ///     }
+    ///
+    /// </remarks>
+    /// <param name="user">Данные для создания пользователя</param>
     [HttpPost]
+    [Consumes("application/json")]
+    [Produces("application/json", "application/xml")]
+    [SwaggerResponse(201, "Пользователь создан")]
+    [SwaggerResponse(400, "Некорректные входные данные")]
+    [SwaggerResponse(422, "Ошибка при проверке")]
     public IActionResult CreateUser([FromBody] CreateUserDto? user)
     {
         if (user is null)
@@ -65,7 +93,14 @@ public class UsersController : Controller
             insertedUserEntity.Id);
     }
 
+    /// <summary>
+    /// Удалить пользователя
+    /// </summary>
+    /// <param name="userId">Идентификатор пользователя</param>
     [HttpDelete("{userId:guid}")]
+    [Produces("application/json", "application/xml")]
+    [SwaggerResponse(204, "Пользователь удален")]
+    [SwaggerResponse(404, "Пользователь не найден")]
     public IActionResult DeleteUser([FromRoute] Guid userId)
     {
         if (userRepository.FindById(userId) != null)
@@ -77,7 +112,18 @@ public class UsersController : Controller
         return NotFound();
     }
     
+    /// <summary>
+    /// Обновить пользователя
+    /// </summary>
+    /// <param name="userId">Идентификатор пользователя</param>
+    /// <param name="dto">Обновленные данные пользователя</param>
     [HttpPut("{userId}")]
+    [Consumes("application/json")]
+    [Produces("application/json", "application/xml")]
+    [SwaggerResponse(201, "Пользователь создан")]
+    [SwaggerResponse(204, "Пользователь обновлен")]
+    [SwaggerResponse(400, "Некорректные входные данные")]
+    [SwaggerResponse(422, "Ошибка при проверке")]
     public ActionResult UpdateUser([FromRoute] Guid userId, [FromBody] UpdateUserDto? dto)
     {
         if (userId == Guid.Empty || dto is null)
@@ -105,7 +151,18 @@ public class UsersController : Controller
         return NoContent();
     }
 
+    /// <summary>
+    /// Частично обновить пользователя
+    /// </summary>
+    /// <param name="userId">Идентификатор пользователя</param>
+    /// <param name="patchDoc">JSON Patch для пользователя</param>
     [HttpPatch("{userId}")]
+    [Consumes("application/json-patch+json")]
+    [Produces("application/json", "application/xml")]
+    [SwaggerResponse(204, "Пользователь обновлен")]
+    [SwaggerResponse(400, "Некорректные входные данные")]
+    [SwaggerResponse(404, "Пользователь не найден")]
+    [SwaggerResponse(422, "Ошибка при проверке")]
     public ActionResult PartiallyUpdateUser([FromRoute] Guid userId, [FromBody] JsonPatchDocument<UpdateUserDto>? patchDoc)
     {
         if (userId == Guid.Empty)
@@ -139,7 +196,11 @@ public class UsersController : Controller
         return NoContent();
     }
 
+    /// <summary>
+    /// Опции по запросам о пользователях
+    /// </summary>
     [HttpOptions]
+    [SwaggerResponse(200, "OK")]
     public IActionResult GetUsersOptions()
     {
         Response.Headers.Append("Allow", "POST, GET, OPTIONS");
@@ -147,7 +208,13 @@ public class UsersController : Controller
     }
 
     
-
+    /// <summary>
+    /// Получить пользователей
+    /// </summary>
+    /// <param name="dto">Номер страницы, по умолчанию 1</param>
+    /// <response code="200">OK</response>
+    [Produces("application/json", "application/xml")]
+    [ProducesResponseType(typeof(IEnumerable<UserDto>), 200)]
     [HttpGet(Name = nameof(GetAllUsers))]
     public IActionResult GetAllUsers(GetUsersDto dto)
     {

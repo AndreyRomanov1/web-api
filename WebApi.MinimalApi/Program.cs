@@ -5,6 +5,7 @@ using Newtonsoft.Json.Serialization;
 using WebApi.MinimalApi.Controllers;
 using WebApi.MinimalApi.Domain;
 using WebApi.MinimalApi.Models;
+using WebApi.MinimalApi.Samples;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddSingleton<IUserRepository, InMemoryUserRepository>();
@@ -33,8 +34,10 @@ builder.Services.AddAutoMapper(cfg =>
     cfg.CreateMap<CreateUserDto, UserEntity>();
     cfg.CreateMap<UpdateUserDto, UserEntity>();
 }, Array.Empty<Assembly>());
+builder.Services.AddSwaggerGeneration();
 
 var app = builder.Build();
+app.UseSwaggerWithUI();
 
 app.MapControllers();
 
